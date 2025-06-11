@@ -26,6 +26,7 @@ import { v4 as uuid } from 'uuid';
 import { useTranslate } from './common-hooks';
 import { useSetPaginationParams } from './route-hook';
 import { useFetchTenantInfo, useSaveSetting } from './user-setting-hooks';
+import { getApiKey } from '@/pages/chat/utils';
 
 export const useSetSelectedRecord = <T = IKnowledgeFile>() => {
   const [currentRecord, setCurrentRecord] = useState<T>({} as T);
@@ -188,6 +189,100 @@ export const useSendMessageWithSse = (
           method: 'POST',
           headers: {
             [Authorization]: getAuthorization(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+          signal: controller?.signal || sseRef.current?.signal,
+        });
+
+        const res = response.clone().json();
+
+        const reader = response?.body
+          ?.pipeThrough(new TextDecoderStream())
+          .pipeThrough(new EventSourceParserStream())
+          .getReader();
+
+        while (true) {
+          const x = await reader?.read();
+          if (x) {
+            const { done, value } = x;
+            if (done) {
+              console.info('done');
+              resetAnswer();
+              break;
+            }
+            try {
+              const val = JSON.parse(value?.data || '');
+              const d = val?.data;
+              if (typeof d !== 'boolean') {
+                console.info('data:', d);
+                setAnswer({
+                  ...d,
+                  conversationId: body?.conversation_id,
+                });
+              }
+            } catch (e) {
+              console.warn(e);
+            }
+          }
+        }
+        console.info('done?');
+        setDone(true);
+        resetAnswer();
+        return { data: await res, response };
+      } catch (e) {
+        setDone(true);
+        resetAnswer();
+
+        console.warn(e);
+      }
+    },
+    [initializeSseRef, url, resetAnswer],
+  );
+
+  const stopOutputMessage = useCallback(() => {
+    sseRef.current?.abort();
+  }, []);
+
+  return { send, answer, done, setDone, resetAnswer, stopOutputMessage };
+};
+
+export const usePersonalSendMessageWithSse = (
+  url: string = api.completeConversation,
+) => {
+  const [answer, setAnswer] = useState<IAnswer>({} as IAnswer);
+  const [done, setDone] = useState(true);
+  const timer = useRef<any>();
+  const sseRef = useRef<AbortController>();
+
+  const initializeSseRef = useCallback(() => {
+    sseRef.current = new AbortController();
+  }, []);
+
+  const resetAnswer = useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      setAnswer({} as IAnswer);
+      clearTimeout(timer.current);
+    }, 1000);
+  }, []);
+
+  
+
+  const send = useCallback(
+    async (
+      body: any,
+      controller?: AbortController,
+    ): Promise<{ response: Response; data: ResponseType } | undefined> => {
+      initializeSseRef();
+      try {
+        setDone(false);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            [Authorization]: `Bearer ${getApiKey()}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(body),

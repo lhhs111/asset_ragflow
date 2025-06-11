@@ -3,6 +3,7 @@ import { IConversation, IReference } from '@/interfaces/database/chat';
 import { isEmpty } from 'lodash';
 import { EmptyConversationId } from './constants';
 import { IMessage } from './interface';
+const urlParams = new URLSearchParams(window.location.search);
 
 export const isConversationIdExist = (conversationId: string) => {
   return conversationId !== EmptyConversationId && conversationId !== '';
@@ -55,3 +56,8 @@ export const replaceTextByOldReg = (text: string) => {
       })
   );
 };
+
+// API KEY
+export const getApiKey = () => {
+  return 'ragflow-' + urlParams.get('api_key');
+}
