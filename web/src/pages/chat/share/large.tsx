@@ -17,8 +17,13 @@ import { useFetchFlowSSE } from '@/hooks/flow-hooks';
 import i18n from '@/locales/config';
 import { buildMessageUuidWithRole } from '@/utils/chat';
 import styles from './index.less';
+// ------------------------------------------------
 
-const ChatContainer = () => {
+interface ChatContainerProps {
+  messages?: any;
+}
+
+const ChatContainer = ({ messages: propMessages, conversation: propConversation }) => {
   const {
     sharedId: conversationId,
     from,
@@ -38,8 +43,19 @@ const ChatContainer = () => {
     derivedMessages,
     hasError,
     stopOutputMessage,
+    setDerivedMessages, // 暴露的方法
   } = useSendSharedMessage();
   const sendDisabled = useSendButtonDisabled(value);
+
+  React.useEffect(() => {
+    if (propMessages && propMessages.length > 0) {
+      setDerivedMessages([...propMessages]);
+    }
+  }, [propMessages, setDerivedMessages]);
+  const displayMessages = useMemo(() => {
+    console.log('propConversation :>> ', propConversation);
+    return derivedMessages;
+  }, [derivedMessages]);
 
   const useFetchAvatar = useMemo(() => {
     return from === SharedFrom.Agent
@@ -63,7 +79,7 @@ const ChatContainer = () => {
         <Flex flex={1} vertical className={styles.messageContainer}>
           <div>
             <Spin spinning={loading}>
-              {derivedMessages?.map((message, i) => {
+              {displayMessages?.map((message, i) => {
                 return (
                   <MessageItem
                     visibleAvatar={visibleAvatar}
@@ -73,15 +89,15 @@ const ChatContainer = () => {
                     nickname="You"
                     reference={buildMessageItemReference(
                       {
-                        message: derivedMessages,
-                        reference: [],
+                        message: displayMessages,
+                        reference: propConversation.reference,
                       },
                       message,
                     )}
                     loading={
                       message.role === MessageType.Assistant &&
                       sendLoading &&
-                      derivedMessages?.length - 1 === i
+                      displayMessages?.length - 1 === i
                     }
                     index={i}
                     clickDocumentButton={clickDocumentButton}

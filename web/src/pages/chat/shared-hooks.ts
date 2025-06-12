@@ -3,6 +3,7 @@ import { useCreateNextSharedConversation } from '@/hooks/chat-hooks';
 import {
   useSelectDerivedMessages,
   useSendMessageWithSse,
+  usePersonalSendMessageWithSse,
 } from '@/hooks/logic-hooks';
 import { Message } from '@/interfaces/database/chat';
 import { message } from 'antd';
@@ -41,6 +42,7 @@ export const useGetSharedChatSearchParams = () => {
 };
 
 export const useSendSharedMessage = () => {
+  const [searchParams] = useSearchParams();
   const {
     from,
     sharedId: conversationId,
@@ -49,25 +51,32 @@ export const useSendSharedMessage = () => {
   const { createSharedConversation: setConversation } =
     useCreateNextSharedConversation();
   const { handleInputChange, value, setValue } = useHandleMessageInputChange();
-  const { send, answer, done, stopOutputMessage } = useSendMessageWithSse(
-    `/api/v1/${from === SharedFrom.Agent ? 'agentbots' : 'chatbots'}/${conversationId}/completions`,
+  // const { send, answer, done, stopOutputMessage } = useSendMessageWithSse(
+  const { send, answer, done, stopOutputMessage } = usePersonalSendMessageWithSse(
+    // `/api/v1/${from === SharedFrom.Agent ? 'agentbots' : 'chatbots'}/${conversationId}/completions`,
+    `/api/v1/chats/${conversationId}/completions`,
   );
+
   const {
     derivedMessages,
+    setDerivedMessages,
     ref,
     removeLatestMessage,
     addNewestAnswer,
     addNewestQuestion,
   } = useSelectDerivedMessages();
   const [hasError, setHasError] = useState(false);
-
+  
+  console.log('object :>> ', from, SharedFrom.Agent,derivedMessages, get(derivedMessages, '0.session_id'));
   const sendMessage = useCallback(
     async (message: Message, id?: string) => {
       const res = await send({
         conversation_id: id ?? conversationId,
         quote: true,
         question: message.content,
-        session_id: get(derivedMessages, '0.session_id'),
+        session_id: searchParams.get('id') || get(derivedMessages, '0.session_id'),
+        // session_id: get(derivedMessages, '0.session_id'),
+        user_id: searchParams.get('user_id') || 'release',
       });
 
       if (isCompletionError(res)) {
@@ -94,18 +103,9 @@ export const useSendSharedMessage = () => {
     [conversationId, setConversation, sendMessage],
   );
 
-  const fetchSessionId = useCallback(async () => {
-    const payload = { question: '' };
-    const ret = await send({ ...payload, ...data });
-    if (isCompletionError(ret)) {
-      message.error(ret?.data.message);
-      setHasError(true);
-    }
-  }, [send]);
-
-  useEffect(() => {
-    fetchSessionId();
-  }, [fetchSessionId, send]);
+  // useEffect(() => {
+  //   fetchSessionId();
+  // }, [fetchSessionId, send]);
 
   useEffect(() => {
     if (answer.answer) {
@@ -145,5 +145,6 @@ export const useSendSharedMessage = () => {
     derivedMessages,
     hasError,
     stopOutputMessage,
+    setDerivedMessages
   };
 };

@@ -36,6 +36,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef
 } from 'react';
 import { useSearchParams } from 'umi';
 import { v4 as uuid } from 'uuid';
@@ -44,6 +45,8 @@ import {
   IMessage,
   VariableTableDataType,
 } from './interface';
+import { getApiKey } from './utils';
+import axios from 'axios';
 
 export const useSetChatRouteParams = () => {
   const [currentQueryParameters, setSearchParams] = useSearchParams();
@@ -363,6 +366,7 @@ export const useHandleMessageInputChange = () => {
 };
 
 export const useSendNextMessage = (controller: AbortController) => {
+  const hasInitialized = useRef(false);
   const { setConversation } = useSetConversation();
   const { conversationId, isNew } = useGetChatSearchParams();
   const { handleInputChange, value, setValue } = useHandleMessageInputChange();
@@ -470,6 +474,12 @@ export const useSendNextMessage = (controller: AbortController) => {
   const handlePressEnter = useCallback(
     (documentIds: string[]) => {
       if (trim(value) === '') return;
+      // 如果还没初始化 session，则先调用一次 fetchSessionId
+      if (!hasInitialized.current) {
+        fetchSessionId();
+        hasInitialized.current = true;
+      }
+
       const id = uuid();
 
       addNewestQuestion({
@@ -533,6 +543,39 @@ export const useDeleteConversation = () => {
   return { onRemoveConversation };
 };
 
+const urlParams = new URLSearchParams(window.location.search);
+const user_id = urlParams.get('user_id'); // 获取名为user_id的参数值
+const shared_id = urlParams.get('shared_id'); // 获取名为shared_id的参数值
+
+export const usePersionalDeleteConversation = () => {
+  const showDeleteConfirm = useShowDeleteConfirm();
+  const { removeConversation } = useRemoveNextConversation();
+
+  const deleteConversation = (conversationIds: Array<string>) => async () => {
+    let ret = {} as any;
+    const url = `/api/v1/chats/${shared_id}/sessions`
+    await axios.delete(url,{
+      data: { ids: conversationIds },
+      headers: { 'Authorization': `Bearer ${getApiKey()}` }
+    })
+    .then(response => {
+      // 处理返回的数据
+      ret = response.data;
+    })
+    .catch(error => {
+      // 处理错误
+      ret = error;
+    });
+    return ret;
+  };
+
+  const onRemoveConversation = async (conversationIds: Array<string>) => {
+    await showDeleteConfirm({ onOk: deleteConversation(conversationIds) });
+  };
+
+  return { onRemoveConversation };
+};
+
 export const useRenameConversation = () => {
   const [conversation, setConversation] = useState<IClientConversation>(
     {} as IClientConversation,
@@ -569,6 +612,66 @@ export const useRenameConversation = () => {
       showConversationRenameModal();
     },
     [showConversationRenameModal, fetchConversation],
+  );
+
+  return {
+    conversationRenameLoading: loading,
+    initialConversationName: conversation.name,
+    onConversationRenameOk,
+    conversationRenameVisible,
+    hideConversationRenameModal,
+    showConversationRenameModal: handleShowConversationRenameModal,
+  };
+};
+
+export const usePersonalRenameConversation = () => {
+  const [conversation, setConversation] = useState<IClientConversation>(
+    {} as IClientConversation,
+  );
+  const { fetchConversation } = useFetchManualConversation();
+  const {
+    visible: conversationRenameVisible,
+    hideModal: hideConversationRenameModal,
+    showModal: showConversationRenameModal,
+  } = useSetModalState();
+  const { updateConversation, loading } = useUpdateNextConversation();
+
+  const onConversationRenameOk = useCallback(
+    async (name: string) => {
+      const url = `/api/v1/chats/${shared_id}/sessions/${conversation.id}`;
+      await axios.put(
+        url,
+        {name, user_id: user_id },
+        { headers: { 'Authorization': `Bearer ${getApiKey()}` } }
+      )
+      .then(response => {
+        // 处理返回的数据
+        if (response.data.code === 0) {
+          hideConversationRenameModal();
+        }
+      })
+      .catch(error => {
+        // 处理错误
+        
+      });
+    },
+    [updateConversation, conversation, hideConversationRenameModal],
+  );
+
+  const handleShowConversationRenameModal = useCallback(
+    async (conversation: any) => {
+      // const ret = await fetchConversation(conversationId);
+      // if (ret.code === 0) {
+      conversation.dialog_id = conversation.chat_id;
+      conversation.avatar = '';
+      conversation.isPending = false;
+      setTimeout(() => {setConversation(conversation);},100)
+        
+      // }
+      showConversationRenameModal();
+    },
+    // [showConversationRenameModal, fetchConversation],
+    [showConversationRenameModal],
   );
 
   return {

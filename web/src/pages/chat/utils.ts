@@ -3,6 +3,7 @@ import { IConversation, IReference } from '@/interfaces/database/chat';
 import { isEmpty } from 'lodash';
 import { EmptyConversationId } from './constants';
 import { IMessage } from './interface';
+const urlParams = new URLSearchParams(window.location.search);
 
 export const isConversationIdExist = (conversationId: string) => {
   return conversationId !== EmptyConversationId && conversationId !== '';
@@ -38,7 +39,6 @@ export const buildMessageItemReference = (
   const reference = !isEmpty(message?.reference)
     ? message?.reference
     : (conversation?.reference ?? [])[referenceIndex];
-
   return reference ?? { doc_aggs: [], chunks: [], total: 0 };
 };
 
@@ -50,3 +50,8 @@ export const replaceTextByOldReg = (text: string) => {
     return `~~${substring.slice(2, -2)}==`;
   });
 };
+
+// API KEY
+export const getApiKey = () => {
+  return 'ragflow-' + urlParams.get('api_key');
+}
