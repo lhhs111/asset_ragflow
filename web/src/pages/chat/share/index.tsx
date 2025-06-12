@@ -80,7 +80,7 @@ const SharedChat = () => {
           item['reference'] = [];
           if (item.messages?.length > 1) {
             item.messages.map((message: any, index: number) => {
-              if (message.role === 'assistant') {
+              if (message.role === 'assistant' && index > 1) {
                 if (message.reference?.length > 0)  {
                   item.reference.push({
                     chunks: message.reference || [],
