@@ -284,6 +284,7 @@ RAGFlow 默认使用 Elasticsearch 存储文本和向量数据. 如果要切换�
 git clone https://github.com/infiniflow/ragflow.git
 cd ragflow/
 docker build --platform linux/amd64 --build-arg LIGHTEN=1 --build-arg NEED_MIRROR=1 -f Dockerfile -t infiniflow/ragflow:nightly-slim .
+docker build --platform linux/amd64 --build-arg LIGHTEN=1 --build-arg NEED_MIRROR=1 -f Dockerfile -t asset/ragflow:v0.18.0_dev .
 ```
 
 ## 🔧 源码编译 Docker 镜像（包含 embedding 模型）
