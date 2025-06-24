@@ -77,6 +77,7 @@ export const useGetChatSearchParams = () => {
     conversationId:
       currentQueryParameters.get(ChatSearchParams.ConversationId) || '',
     isNew: currentQueryParameters.get(ChatSearchParams.isNew) || '',
+    userId: currentQueryParameters.get(ChatSearchParams.UserId) || '',
   };
 };
 
@@ -268,6 +269,34 @@ export const useFetchNextConversationList = () => {
 
   return { data, loading, refetch };
 };
+// export const useFetchNextConversationListNa = () => {
+//   const { dialogId } = useGetChatSearchParams();
+//   const { handleClickConversation } = useClickConversationCard();
+//   const {
+//     data,
+//     isFetching: loading,
+//     refetch,
+//   } = useQuery<IConversation[]>({
+//     queryKey: ['fetchConversationList', dialogId],
+//     initialData: [],
+//     gcTime: 0,
+//     refetchOnWindowFocus: false,
+//     enabled: !!dialogId,
+//     queryFn: async () => {
+//       const { data } = await chatService.listConversation({ dialogId });
+//       if (data.code === 0) {
+//         if (data.data.length > 0) {
+//           handleClickConversation(data.data[0].id, '');
+//         } else {
+//           handleClickConversation('', '');
+//         }
+//       }
+//       return data?.data;
+//     },
+//   });
+
+//   return { data, loading, refetch };
+// };
 
 export const useFetchNextConversation = () => {
   const { isNew, conversationId } = useGetChatSearchParams();

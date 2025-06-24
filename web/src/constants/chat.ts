@@ -28,6 +28,7 @@ export enum ChatSearchParams {
   DialogId = 'dialogId',
   ConversationId = 'conversationId',
   isNew = 'isNew',
+  UserId = 'userId',
 }
 
 export const EmptyConversationId = 'empty';

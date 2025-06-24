@@ -52,7 +52,8 @@ const EmbedModal = ({
   }, []);
 
   const generateIframeSrc = () => {
-    let src = `${location.origin}/chat/share?shared_id=${token}&from=${form}&auth=${beta}`;
+    // let src = `${location.origin}/chat/share?shared_id=${token}&from=${form}&auth=${beta}`;
+    let src = `${location.origin}/chat/share?dialogId=${token}&from=${form}&auth=${beta}`;
     if (visibleAvatar) {
       src += '&visible_avatar=1';
     }

@@ -37,6 +37,7 @@ const routes = [
   {
     path: '/chat/share',
     component: '@/pages/chat/share',
+    // component: '@/pages/chat/index',
     layout: false,
   },
   {

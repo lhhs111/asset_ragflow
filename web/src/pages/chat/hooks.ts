@@ -5,6 +5,7 @@ import {
   useFetchManualDialog,
   useFetchNextConversation,
   useFetchNextConversationList,
+  // useFetchNextConversationListNa,
   useFetchNextDialog,
   useFetchNextDialogList,
   useGetChatSearchParams,
@@ -221,7 +222,7 @@ export const useSelectDerivedConversationList = () => {
 
   const [list, setList] = useState<Array<IConversation>>([]);
   const { data: conversationList, loading } = useFetchNextConversationList();
-  const { dialogId } = useGetChatSearchParams();
+  const { dialogId, userId } = useGetChatSearchParams();
   const { setNewConversationRouteParams } = useSetNewConversationRouteParams();
   const prologue = useFindPrologueFromDialogList();
 
@@ -236,6 +237,7 @@ export const useSelectDerivedConversationList = () => {
             name: t('newConversation'),
             dialog_id: dialogId,
             is_new: true,
+            user_id: userId,
             message: [
               {
                 content: prologue,
@@ -260,9 +262,54 @@ export const useSelectDerivedConversationList = () => {
 
   return { list, addTemporaryConversation, loading };
 };
+// export const useSelectDerivedConversationListNa = () => {
+//   const { t } = useTranslate('chat');
+
+//   const [list, setList] = useState<Array<IConversation>>([]);
+//   const { data: conversationList, loading } = useFetchNextConversationListNa();
+//   const { dialogId, userId } = useGetChatSearchParams();
+//   const { setNewConversationRouteParams } = useSetNewConversationRouteParams();
+//   const prologue = useFindPrologueFromDialogList();
+
+//   const addTemporaryConversation = useCallback(() => {
+//     const conversationId = getConversationId();
+//     setList((pre) => {
+//       if (dialogId) {
+//         setNewConversationRouteParams(conversationId, 'true');
+//         const nextList = [
+//           {
+//             id: conversationId,
+//             name: t('newConversation'),
+//             dialog_id: dialogId,
+//             is_new: true,
+//             user_id: userId,
+//             message: [
+//               {
+//                 content: prologue,
+//                 role: MessageType.Assistant,
+//               },
+//             ],
+//           } as any,
+//           ...conversationList,
+//         ];
+//         return nextList;
+//       }
+
+//       return pre;
+//     });
+//   }, [conversationList, dialogId, prologue, t, setNewConversationRouteParams]);
+
+//   // When you first enter the page, select the top conversation card
+
+//   useEffect(() => {
+//     setList([...conversationList]);
+//   }, [conversationList]);
+
+//   return { list, addTemporaryConversation, loading };
+// };
 
 export const useSetConversation = () => {
-  const { dialogId } = useGetChatSearchParams();
+  const { dialogId, userId } = useGetChatSearchParams();
   const { updateConversation } = useUpdateNextConversation();
 
   const setConversation = useCallback(
@@ -276,6 +323,7 @@ export const useSetConversation = () => {
         name: message,
         is_new: isNew,
         conversation_id: conversationId,
+        user_id: userId,
         message: [
           {
             role: MessageType.Assistant,
@@ -366,7 +414,6 @@ export const useHandleMessageInputChange = () => {
 };
 
 export const useSendNextMessage = (controller: AbortController) => {
-  const hasInitialized = useRef(false);
   const { setConversation } = useSetConversation();
   const { conversationId, isNew } = useGetChatSearchParams();
   const { handleInputChange, value, setValue } = useHandleMessageInputChange();
@@ -474,11 +521,6 @@ export const useSendNextMessage = (controller: AbortController) => {
   const handlePressEnter = useCallback(
     (documentIds: string[]) => {
       if (trim(value) === '') return;
-      // 如果还没初始化 session，则先调用一次 fetchSessionId
-      if (!hasInitialized.current) {
-        // fetchSessionId();
-        hasInitialized.current = true;
-      }
       const id = uuid();
 
       addNewestQuestion({

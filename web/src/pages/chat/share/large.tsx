@@ -48,7 +48,6 @@ const ChatContainer = ({ messages: propMessages, conversation: propConversation 
     }
   }, [propMessages, setDerivedMessages]);
   const displayMessages = useMemo(() => {
-    console.log('propConversation :>> ', propConversation);
     return derivedMessages;
   }, [derivedMessages]);
 
